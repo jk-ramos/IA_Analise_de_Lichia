@@ -1,140 +1,79 @@
 import io
 import glob
 from datetime import datetime
+from pathlib import Path
 
-import matplotlib.cm as cm
+import matplotlib
 import numpy as np
 import streamlit as st
 import tensorflow as tf
 from PIL import Image, ImageDraw, ImageFont
 
+
+# -----------------------------
+# CONFIGURAÇÕES GERAIS
+# -----------------------------
+BASE_DIR = Path(__file__).resolve().parent
 IMG_HEIGHT, IMG_WIDTH = 150, 150
 LAST_CONV_LAYER_NAME = "conv2d_2"
-MODEL_PATH = "ia_lichia/modelo_lichia.keras"
-LOGO_PATH = "LOGO SPLASH SCREEN.png"
 
+MODEL_PATH = BASE_DIR / "ia_lichia" / "modelo_lichia.keras"
+LOGO_PATH = BASE_DIR / "LOGO SPLASH SCREEN.png"
+CSS_PATH = BASE_DIR / "styles.css"
+
+
+# -----------------------------
+# CONFIGURAÇÃO DA PÁGINA
+# -----------------------------
 st.set_page_config(
     page_title="Mobo - Análise de Lichias",
     page_icon="🍒",
     layout="wide"
 )
 
+
 # -----------------------------
-# ESTILO
+# ESTILOS
 # -----------------------------
-st.markdown("""
-<style>
-    .stApp {
-        background: linear-gradient(180deg, #09111f 0%, #0c1323 100%);
-    }
-
-    .hero-box {
-        background: linear-gradient(135deg, rgba(108,129,64,0.30), rgba(191,7,90,0.14));
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 24px;
-        padding: 1.5rem 1.8rem;
-        margin-bottom: 1.4rem;
-    }
-
-    .main-title {
-        font-size: 2.5rem;
-        font-weight: 800;
-        color: #f8fafc;
-        margin-bottom: 0.2rem;
-    }
-
-    .subtitle {
-        font-size: 1.08rem;
-        color: #d1d5db;
-        margin-top: 0.2rem;
-    }
-
-    .section-title {
-        font-size: 1.45rem;
-        font-weight: 700;
-        color: #f8fafc;
-        margin-top: 0.7rem;
-        margin-bottom: 0.9rem;
-    }
-
-    .result-card {
-        padding: 1.25rem;
-        border-radius: 18px;
-        margin-top: 0.8rem;
-        margin-bottom: 1.1rem;
-        border-left: 8px solid;
-        box-shadow: 0 8px 28px rgba(0,0,0,0.18);
-    }
-
-    .result-title {
-        font-size: 1.35rem;
-        font-weight: 800;
-        margin-bottom: 0.45rem;
-    }
-
-    .result-text {
-        font-size: 1rem;
-        line-height: 1.6;
-    }
-
-    .metric-box {
-        background: rgba(10, 24, 52, 0.82);
-        padding: 1rem;
-        border-radius: 18px;
-        text-align: center;
-        border: 1px solid rgba(255,255,255,0.09);
-    }
-
-    .metric-label {
-        color: #cbd5e1;
-        font-size: 0.95rem;
-        margin-bottom: 0.35rem;
-    }
-
-    .metric-value {
-        font-size: 1.6rem;
-        font-weight: 800;
-        color: #f8fafc;
-    }
-
-    .history-card {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.06);
-        border-radius: 14px;
-        padding: 0.8rem;
-        margin-bottom: 0.7rem;
-    }
-
-    .small-muted {
-        color: #cbd5e1;
-        font-size: 0.9rem;
-    }
-</style>
-""", unsafe_allow_html=True)
+def load_css():
+    if CSS_PATH.exists():
+        with open(CSS_PATH, "r", encoding="utf-8") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 
 # -----------------------------
 # ESTADO
 # -----------------------------
-if "history" not in st.session_state:
-    st.session_state.history = []
+def init_session_state():
+    if "history" not in st.session_state:
+        st.session_state.history = []
 
-if "selected_example" not in st.session_state:
-    st.session_state.selected_example = None
+    if "selected_example" not in st.session_state:
+        st.session_state.selected_example = None
+
+    if "selected_analysis_index" not in st.session_state:
+        st.session_state.selected_analysis_index = 0
+
+    if "last_history_key" not in st.session_state:
+        st.session_state.last_history_key = None
 
 
 # -----------------------------
-# FUNÇÕES
+# CARREGAMENTO DE RECURSOS
 # -----------------------------
 @st.cache_resource
 def load_model():
-    return tf.keras.models.load_model(MODEL_PATH)
+    return tf.keras.models.load_model(str(MODEL_PATH))
 
 
 @st.cache_data
 def get_example_images():
-    madura = sorted(glob.glob("ia_lichia/dataset/test/madura/*"))
-    nao_madura = sorted(glob.glob("ia_lichia/dataset/test/nao_madura/*"))
+    madura = sorted(
+        glob.glob(str(BASE_DIR / "ia_lichia" / "dataset" / "test" / "madura" / "*"))
+    )
+    nao_madura = sorted(
+        glob.glob(str(BASE_DIR / "ia_lichia" / "dataset" / "test" / "nao_madura" / "*"))
+    )
 
     examples = {}
     if madura:
@@ -145,6 +84,9 @@ def get_example_images():
     return examples
 
 
+# -----------------------------
+# PROCESSAMENTO DE IMAGEM
+# -----------------------------
 def preprocess_image(image):
     image = image.convert("RGB")
     image_resized = image.resize((IMG_WIDTH, IMG_HEIGHT))
@@ -181,7 +123,7 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer_name):
 def overlay_heatmap_on_image(original_image, heatmap, alpha=0.45):
     heatmap = np.uint8(255 * heatmap)
 
-    jet = cm.get_cmap("jet")
+    jet = matplotlib.colormaps["jet"]
     jet_colors = jet(np.arange(256))[:, :3]
     jet_heatmap = jet_colors[heatmap]
 
@@ -197,6 +139,9 @@ def overlay_heatmap_on_image(original_image, heatmap, alpha=0.45):
     return Image.fromarray(superimposed)
 
 
+# -----------------------------
+# REGRAS DE APRESENTAÇÃO
+# -----------------------------
 def get_result_style(confidence):
     if confidence >= 0.90:
         return {
@@ -205,20 +150,19 @@ def get_result_style(confidence):
             "title": "Alta confiança",
             "text": "O modelo identificou o resultado com alta segurança."
         }
-    elif confidence >= 0.70:
+    if confidence >= 0.70:
         return {
             "bg": "#3e2c0d",
             "border": "#facc15",
             "title": "Confiança moderada",
             "text": "O modelo encontrou um resultado plausível, mas com segurança intermediária."
         }
-    else:
-        return {
-            "bg": "#3b1115",
-            "border": "#ef4444",
-            "title": "Baixa confiança",
-            "text": "O modelo encontrou um resultado incerto. Vale a pena testar outra imagem."
-        }
+    return {
+        "bg": "#3b1115",
+        "border": "#ef4444",
+        "title": "Baixa confiança",
+        "text": "O modelo encontrou um resultado incerto. Vale a pena testar outra imagem."
+    }
 
 
 def get_prediction_text(predicted_class, confidence):
@@ -227,6 +171,9 @@ def get_prediction_text(predicted_class, confidence):
     return f"A IA identificou que a lichia está não madura com confiança de {confidence:.2%}."
 
 
+# -----------------------------
+# EXPORTAÇÃO
+# -----------------------------
 def safe_font(size=28):
     try:
         return ImageFont.truetype("arial.ttf", size)
@@ -251,18 +198,15 @@ def make_report_image(original_image, heatmap_image, predicted_class, confidence
     text_font = safe_font(34)
     small_font = safe_font(24)
 
-    # Cabeçalho
     draw.rounded_rectangle((40, 35, 1560, 170), radius=30, fill=(108, 129, 64))
     draw.text((70, 60), "Relatório de análise - Mobo IA Lichia", fill=white, font=title_font)
     draw.text((70, 122), f"Gerado em: {timestamp_text}", fill=white, font=subtitle_font)
 
-    # Cartão de resultado
     result_color = green if confidence >= 0.90 else accent
     draw.rounded_rectangle((40, 205, 1560, 355), radius=26, fill=(15, 41, 31))
     draw.text((70, 235), f"Classe prevista: {predicted_class}", fill=white, font=text_font)
     draw.text((70, 285), f"Confiança: {confidence:.2%}", fill=result_color, font=text_font)
 
-    # Imagens
     img_w, img_h = 650, 520
     original_resized = original_image.resize((img_w, img_h))
     heatmap_resized = heatmap_image.resize((img_w, img_h))
@@ -294,6 +238,9 @@ def pil_to_pdf_bytes(image):
     return buffer
 
 
+# -----------------------------
+# HISTÓRICO
+# -----------------------------
 def add_to_history(file_name, predicted_class, confidence):
     entry = {
         "file_name": file_name,
@@ -305,103 +252,26 @@ def add_to_history(file_name, predicted_class, confidence):
     st.session_state.history = st.session_state.history[:10]
 
 
-# -----------------------------
-# CARREGAMENTO
-# -----------------------------
-model = load_model()
-examples = get_example_images()
-
-
-# -----------------------------
-# SIDEBAR / HISTÓRICO
-# -----------------------------
-with st.sidebar:
-    st.markdown("## Histórico de previsões")
-    if st.session_state.history:
-        for item in st.session_state.history:
-            st.markdown(
-                f"""
-                <div class="history-card">
-                    <strong>{item['predicted_class']}</strong><br>
-                    <span class="small-muted">{item['file_name']}</span><br>
-                    <span class="small-muted">Confiança: {item['confidence']}</span><br>
-                    <span class="small-muted">{item['time']}</span>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-    else:
-        st.info("Nenhuma previsão registrada ainda.")
-
-    if st.button("Limpar histórico", use_container_width=True):
-        st.session_state.history = []
-        st.rerun()
-
-
-# -----------------------------
-# TOPO
-# -----------------------------
-top_col1, top_col2 = st.columns([1, 6])
-
-with top_col1:
-    try:
-        st.image(LOGO_PATH, width=110)
-    except Exception:
-        st.markdown("### 🍒")
-
-with top_col2:
-    st.markdown(
-        """
-        <div class="hero-box">
-            <div class="main-title">IA para análise de maturação de lichias</div>
-            <div class="subtitle">
-                Envie uma imagem para que o modelo identifique se a lichia está madura ou não madura
-                e mostre a região visual mais relevante para a decisão.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
+def register_history_once(result):
+    history_key = (
+        result["file_name"],
+        result["predicted_class"],
+        f"{result['confidence']:.4f}"
     )
 
-
-# -----------------------------
-# EXEMPLOS
-# -----------------------------
-st.markdown('<div class="section-title">Teste rápido</div>', unsafe_allow_html=True)
-example_cols = st.columns(3)
-
-with example_cols[0]:
-    if "Exemplo madura" in examples and st.button("Usar exemplo madura", use_container_width=True):
-        st.session_state.selected_example = examples["Exemplo madura"]
-
-with example_cols[1]:
-    if "Exemplo não madura" in examples and st.button("Usar exemplo não madura", use_container_width=True):
-        st.session_state.selected_example = examples["Exemplo não madura"]
-
-with example_cols[2]:
-    if st.button("Remover exemplo selecionado", use_container_width=True):
-        st.session_state.selected_example = None
-
-uploaded_file = st.file_uploader(
-    "Escolha uma imagem",
-    type=["jpg", "jpeg", "png"]
-)
-
-image_source_name = None
-image = None
-
-if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert("RGB")
-    image_source_name = uploaded_file.name
-elif st.session_state.selected_example is not None:
-    image = Image.open(st.session_state.selected_example).convert("RGB")
-    image_source_name = st.session_state.selected_example.split("\\")[-1].split("/")[-1]
+    if st.session_state.last_history_key != history_key:
+        add_to_history(
+            result["file_name"],
+            result["predicted_class"],
+            result["confidence"]
+        )
+        st.session_state.last_history_key = history_key
 
 
 # -----------------------------
 # ANÁLISE
 # -----------------------------
-if image is not None:
+def analyze_image(image, image_source_name, model):
     processed_image, image_array = preprocess_image(image)
 
     prediction = model.predict(image_array, verbose=0)[0][0]
@@ -416,22 +286,172 @@ if image is not None:
     heatmap = make_gradcam_heatmap(image_array, model, LAST_CONV_LAYER_NAME)
     heatmap_image = overlay_heatmap_on_image(processed_image, heatmap)
 
-    style = get_result_style(confidence)
-    prediction_text = get_prediction_text(predicted_class, confidence)
+    return {
+        "file_name": image_source_name,
+        "processed_image": processed_image,
+        "predicted_class": predicted_class,
+        "confidence": confidence,
+        "heatmap_image": heatmap_image,
+        "style": get_result_style(confidence),
+        "prediction_text": get_prediction_text(predicted_class, confidence)
+    }
 
-    add_to_history(image_source_name, predicted_class, confidence)
 
-    st.markdown('<div class="section-title">Resultado da análise</div>', unsafe_allow_html=True)
+def build_selected_images(uploaded_files):
+    selected_images = []
+
+    if uploaded_files:
+        for uploaded_file in uploaded_files:
+            selected_images.append({
+                "name": uploaded_file.name,
+                "image": Image.open(uploaded_file).convert("RGB")
+            })
+    elif st.session_state.selected_example is not None:
+        selected_images.append({
+            "name": Path(st.session_state.selected_example).name,
+            "image": Image.open(st.session_state.selected_example).convert("RGB")
+        })
+
+    if not selected_images:
+        st.session_state.selected_analysis_index = 0
+    elif st.session_state.selected_analysis_index >= len(selected_images):
+        st.session_state.selected_analysis_index = 0
+
+    return selected_images
+
+
+# -----------------------------
+# COMPONENTES DE INTERFACE
+# -----------------------------
+def render_sidebar_history():
+    with st.sidebar:
+        st.markdown("## Histórico de previsões")
+
+        if st.session_state.history:
+            for item in st.session_state.history:
+                st.markdown(
+                    f"""
+                    <div class="history-card">
+                        <strong>{item['predicted_class']}</strong><br>
+                        <span class="small-muted">{item['file_name']}</span><br>
+                        <span class="small-muted">Confiança: {item['confidence']}</span><br>
+                        <span class="small-muted">{item['time']}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+        else:
+            st.info("Nenhuma previsão registrada ainda.")
+
+        if st.button("Limpar histórico", width="stretch"):
+            st.session_state.history = []
+            st.session_state.last_history_key = None
+            st.rerun()
+
+
+def render_header():
+    top_col1, top_col2 = st.columns([1, 6])
+
+    with top_col1:
+        try:
+            st.image(str(LOGO_PATH), width=110)
+        except Exception:
+            st.markdown("### 🍒")
+
+    with top_col2:
+        st.markdown(
+            """
+            <div class="hero-box">
+                <div class="main-title">IA para análise de maturação de lichias</div>
+                <div class="subtitle">
+                    Envie uma imagem para que o modelo identifique se a lichia está madura ou não madura
+                    e mostre a região visual mais relevante para a decisão.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+def render_example_buttons(examples):
+    st.markdown('<div class="section-title">Teste rápido</div>', unsafe_allow_html=True)
+    example_cols = st.columns(3)
+
+    with example_cols[0]:
+        if "Exemplo madura" in examples and st.button("Usar exemplo madura", width="stretch"):
+            st.session_state.selected_example = examples["Exemplo madura"]
+            st.session_state.selected_analysis_index = 0
+
+    with example_cols[1]:
+        if "Exemplo não madura" in examples and st.button("Usar exemplo não madura", width="stretch"):
+            st.session_state.selected_example = examples["Exemplo não madura"]
+            st.session_state.selected_analysis_index = 0
+
+    with example_cols[2]:
+        if st.button("Remover exemplo selecionado", width="stretch"):
+            st.session_state.selected_example = None
+            st.session_state.selected_analysis_index = 0
+
+
+def render_comparison_cards(analysis_results):
+    st.markdown('<div class="section-title">Comparação das análises</div>', unsafe_allow_html=True)
+
+    num_columns = min(len(analysis_results), 3)
+    comparison_cols = st.columns(num_columns)
+
+    for index, result in enumerate(analysis_results):
+        col = comparison_cols[index % num_columns]
+        with col:
+            st.image(result["processed_image"], width="stretch")
+            st.markdown(
+                f'<div class="comparison-image-caption">{result["file_name"]}</div>',
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                f"""
+                <div class="comparison-card" style="border-left: 6px solid {result['style']['border']};">
+                    <div class="comparison-title" style="color:{result['style']['border']};">
+                        {result['predicted_class']}
+                    </div>
+                    <div class="comparison-text">
+                        <strong>Confiança:</strong> {result['confidence']:.2%}<br>
+                        {result['prediction_text']}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            if st.button(
+                "Ver análise detalhada",
+                key=f"select_analysis_{index}",
+                width="stretch"
+            ):
+                st.session_state.selected_analysis_index = index
+                st.rerun()
+
+            if st.session_state.selected_analysis_index == index:
+                st.markdown(
+                    '<div class="selected-chip">Análise selecionada</div>',
+                    unsafe_allow_html=True
+                )
+
+
+def render_detailed_result(primary_result):
+    st.markdown('<div class="detail-wrapper"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Resultado detalhado</div>', unsafe_allow_html=True)
 
     st.markdown(
         f"""
-        <div class="result-card" style="background-color:{style['bg']}; border-left-color:{style['border']};">
-            <div class="result-title" style="color:{style['border']};">{style['title']}</div>
+        <div class="result-card" style="background-color:{primary_result['style']['bg']}; border-left-color:{primary_result['style']['border']};">
+            <div class="result-title" style="color:{primary_result['style']['border']};">{primary_result['style']['title']}</div>
             <div class="result-text">
-                <strong>Classe prevista:</strong> {predicted_class}<br>
-                <strong>Confiança:</strong> {confidence:.2%}<br><br>
-                {prediction_text}<br>
-                {style['text']}
+                <strong>Arquivo:</strong> {primary_result['file_name']}<br>
+                <strong>Classe prevista:</strong> {primary_result['predicted_class']}<br>
+                <strong>Confiança:</strong> {primary_result['confidence']:.2%}<br><br>
+                {primary_result['prediction_text']}<br>
+                {primary_result['style']['text']}
             </div>
         </div>
         """,
@@ -445,7 +465,7 @@ if image is not None:
             f"""
             <div class="metric-box">
                 <div class="metric-label">Classe prevista</div>
-                <div class="metric-value">{predicted_class}</div>
+                <div class="metric-value">{primary_result['predicted_class']}</div>
             </div>
             """,
             unsafe_allow_html=True
@@ -456,22 +476,24 @@ if image is not None:
             f"""
             <div class="metric-box">
                 <div class="metric-label">Confiança</div>
-                <div class="metric-value">{confidence:.2%}</div>
+                <div class="metric-value">{primary_result['confidence']:.2%}</div>
             </div>
             """,
             unsafe_allow_html=True
         )
 
-    st.progress(float(confidence))
+    st.progress(float(primary_result["confidence"]))
 
-    st.markdown('<div class="section-title">Visualização</div>', unsafe_allow_html=True)
+
+def render_detailed_visualization(primary_result):
+    st.markdown('<div class="section-title">Visualização detalhada</div>', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
 
     with col1:
-        st.image(processed_image, caption="Imagem original", use_container_width=True)
+        st.image(primary_result["processed_image"], caption="Imagem original", width="stretch")
 
     with col2:
-        st.image(heatmap_image, caption="Heatmap da atenção da IA", use_container_width=True)
+        st.image(primary_result["heatmap_image"], caption="Heatmap da atenção da IA", width="stretch")
 
     with st.expander("Como interpretar o heatmap"):
         st.write(
@@ -479,14 +501,15 @@ if image is not None:
             "Áreas mais quentes tendem a indicar onde a rede concentrou mais atenção para classificar a lichia."
         )
 
-    # Exportação
+
+def render_export_section(primary_result):
     st.markdown('<div class="section-title">Exportação</div>', unsafe_allow_html=True)
 
     report_image = make_report_image(
-        original_image=processed_image,
-        heatmap_image=heatmap_image,
-        predicted_class=predicted_class,
-        confidence=confidence,
+        original_image=primary_result["processed_image"],
+        heatmap_image=primary_result["heatmap_image"],
+        predicted_class=primary_result["predicted_class"],
+        confidence=primary_result["confidence"],
         timestamp_text=datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     )
 
@@ -501,7 +524,7 @@ if image is not None:
             data=png_buffer,
             file_name="analise_lichia.png",
             mime="image/png",
-            use_container_width=True
+            width="stretch"
         )
 
     with export_col2:
@@ -510,5 +533,42 @@ if image is not None:
             data=pdf_buffer,
             file_name="analise_lichia.pdf",
             mime="application/pdf",
-            use_container_width=True
+            width="stretch"
         )
+
+
+# -----------------------------
+# FLUXO PRINCIPAL
+# -----------------------------
+load_css()
+init_session_state()
+
+model = load_model()
+examples = get_example_images()
+
+render_sidebar_history()
+render_header()
+render_example_buttons(examples)
+
+uploaded_files = st.file_uploader(
+    "Escolha uma ou mais imagens",
+    type=["jpg", "jpeg", "png"],
+    accept_multiple_files=True
+)
+
+selected_images = build_selected_images(uploaded_files)
+
+if selected_images:
+    analysis_results = [
+        analyze_image(item["image"], item["name"], model)
+        for item in selected_images
+    ]
+
+    render_comparison_cards(analysis_results)
+
+    primary_result = analysis_results[st.session_state.selected_analysis_index]
+    register_history_once(primary_result)
+
+    render_detailed_result(primary_result)
+    render_detailed_visualization(primary_result)
+    render_export_section(primary_result)

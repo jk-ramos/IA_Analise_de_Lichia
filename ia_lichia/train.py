@@ -4,8 +4,10 @@ from datetime import datetime
 
 import imageio.v2 as imageio
 import matplotlib.pyplot as plt
+import numpy as np
 import tensorflow as tf
 from matplotlib.patches import Rectangle
+from sklearn.metrics import classification_report, confusion_matrix
 from tensorflow.keras import layers, models
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
@@ -77,6 +79,7 @@ def plot_to_tensorboard_image(figure):
     image = tf.image.decode_png(buf.getvalue(), channels=4)
     image = tf.expand_dims(image, 0)
     return image
+
 
 def create_prediction_figure(images, labels, predictions, index_to_class, epoch, max_images=4):
     max_images = min(max_images, len(images))
@@ -172,20 +175,27 @@ class PredictionVideoLoggerCallback(tf.keras.callbacks.Callback):
                 step=epoch
             )
 
-        # Salvar frame para GIF
+        # Salvar frame para GIF/MP4
         frame_path = os.path.join(self.frames_directory, f"epoch_{epoch + 1:03d}.png")
         imageio.imwrite(frame_path, tb_image[0].numpy())
         self.saved_frames.append(frame_path)
 
     def on_train_end(self, logs=None):
-        gif_path = os.path.join(self.frames_directory, "treinamento_ia_lichia.gif")
         images = [imageio.imread(frame) for frame in self.saved_frames]
         if images:
-           mp4_path = os.path.join(self.frames_directory, "treinamento_ia_lichia.mp4")
-with imageio.get_writer(mp4_path, fps=1) as writer:
-    for frame in images:
-        writer.append_data(frame)
-print(f"\nVídeo MP4 salvo em: {mp4_path}")
+            gif_path = os.path.join(self.frames_directory, "treinamento_ia_lichia.gif")
+            imageio.mimsave(gif_path, images, fps=1)
+            print(f"\nGIF salvo em: {gif_path}")
+             # MP4 opcional: só tenta salvar se houver backend disponível
+        try:
+            mp4_path = os.path.join(self.frames_directory, "treinamento_ia_lichia.mp4")
+            with imageio.get_writer(mp4_path, fps=1) as writer:
+                for frame in images:
+                    writer.append_data(frame)
+            print(f"Vídeo MP4 salvo em: {mp4_path}")
+        except Exception as e:
+            print(f"Não foi possível salvar o vídeo MP4: {e}")
+
 
 prediction_video_logger_callback = PredictionVideoLoggerCallback(
     val_generator=validation_generator,
@@ -242,12 +252,142 @@ history = model.fit(
     callbacks=callbacks
 )
 
+# Avaliação no conjunto de teste
 test_loss, test_accuracy = model.evaluate(test_generator)
 print(f"Test accuracy: {test_accuracy:.4f}")
 print(f"Test loss: {test_loss:.4f}")
+
+# Matriz de confusão e relatório de métricas
+test_generator.reset()
+y_prob = model.predict(test_generator, verbose=0)
+y_pred = (y_prob > 0.5).astype(int).ravel()
+y_true = test_generator.classes
+
+cm = confusion_matrix(y_true, y_pred)
+print("\nMatriz de confusão:")
+print(cm)
+
+print("\nClassification report:")
+print(classification_report(
+    y_true,
+    y_pred,
+    target_names=list(test_generator.class_indices.keys()),
+    digits=4
+))
+
+# -----------------------------
+# MATRIZ DE CONFUSÃO - GRÁFICO
+# -----------------------------
+import seaborn as sns
+
+plt.figure(figsize=(8, 6))
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt="d",
+    cmap="Blues",
+    xticklabels=list(test_generator.class_indices.keys()),
+    yticklabels=list(test_generator.class_indices.keys())
+)
+plt.title("Matriz de Confusão", fontsize=16, fontweight="bold")
+plt.xlabel("Predito", fontsize=12)
+plt.ylabel("Real", fontsize=12)
+plt.tight_layout()
+
+cm_png_path = os.path.join(log_dir, "matriz_confusao.png")
+plt.savefig(cm_png_path, dpi=300, bbox_inches="tight")
+plt.show()
+
+print(f"\nMatriz de confusão salva em: {cm_png_path}")
 
 model.save("modelo_lichia.keras")
 
 print(f"\nLogs do TensorBoard salvos em: {log_dir}")
 print(f"Frames salvos em: {frames_dir}")
 print(f"Classes detectadas: {class_indices}")
+
+# -----------------------------
+# GRÁFICOS DE ACURÁCIA E PERDA
+# -----------------------------
+history_dict = history.history
+epochs_range = range(1, len(history_dict["accuracy"]) + 1)
+
+# Gráfico de acurácia
+plt.figure(figsize=(10, 6))
+plt.plot(epochs_range, history_dict["accuracy"], marker="o", linewidth=2, label="Treino")
+plt.plot(epochs_range, history_dict["val_accuracy"], marker="o", linewidth=2, label="Validação")
+plt.title("Desempenho da Acurácia com o Número de Épocas", fontsize=16, fontweight="bold")
+plt.xlabel("Épocas", fontsize=12)
+plt.ylabel("Acurácia", fontsize=12)
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.legend()
+plt.tight_layout()
+
+acc_png_path = os.path.join(log_dir, "grafico_acuracia.png")
+plt.savefig(acc_png_path, dpi=300, bbox_inches="tight")
+plt.show()
+
+# Gráfico de perda
+plt.figure(figsize=(10, 6))
+plt.plot(epochs_range, history_dict["loss"], marker="o", linewidth=2, label="Treino")
+plt.plot(epochs_range, history_dict["val_loss"], marker="o", linewidth=2, label="Validação")
+plt.title("Desempenho da Perda com o Número de Épocas", fontsize=16, fontweight="bold")
+plt.xlabel("Épocas", fontsize=12)
+plt.ylabel("Perda", fontsize=12)
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.legend()
+plt.tight_layout()
+
+loss_png_path = os.path.join(log_dir, "grafico_perda.png")
+plt.savefig(loss_png_path, dpi=300, bbox_inches="tight")
+plt.show()
+
+print(f"\nGráfico de acurácia salvo em: {acc_png_path}")
+print(f"Gráfico de perda salvo em: {loss_png_path}")
+
+# -----------------------------
+# TABELA DE MÉTRICAS
+# -----------------------------
+import pandas as pd
+from sklearn.metrics import precision_recall_fscore_support, accuracy_score
+
+labels = list(test_generator.class_indices.keys())
+
+precision, recall, f1, support = precision_recall_fscore_support(
+    y_true,
+    y_pred,
+    labels=[test_generator.class_indices[label] for label in labels],
+    zero_division=0
+)
+
+accuracy = accuracy_score(y_true, y_pred)
+
+metrics_df = pd.DataFrame({
+    "Métrica": ["Precisão", "Revocação", "F1-score", "Acurácia geral"],
+    "Madura": [
+        f"{precision[0] * 100:.2f}%",
+        f"{recall[0] * 100:.2f}%",
+        f"{f1[0] * 100:.2f}%",
+        "—"
+    ],
+    "Não Madura": [
+        f"{precision[1] * 100:.2f}%",
+        f"{recall[1] * 100:.2f}%",
+        f"{f1[1] * 100:.2f}%",
+        "—"
+    ],
+    "Média": [
+        f"{precision.mean() * 100:.2f}%",
+        f"{recall.mean() * 100:.2f}%",
+        f"{f1.mean() * 100:.2f}%",
+        f"{accuracy * 100:.2f}%"
+    ]
+})
+
+print("\nTabela de métricas:")
+print(metrics_df.to_string(index=False))
+
+metrics_csv_path = os.path.join(log_dir, "tabela_metricas.csv")
+metrics_df.to_csv(metrics_csv_path, index=False, encoding="utf-8-sig")
+
+print(f"\nTabela de métricas salva em: {metrics_csv_path}")

@@ -1,0 +1,164 @@
+/* -----------------------------
+   FUNDO GERAL
+----------------------------- */
+.stApp {
+    background: linear-gradient(180deg, #09111f 0%, #0c1323 100%);
+}
+
+
+/* -----------------------------
+   HERO / CABEÇALHO
+----------------------------- */
+.hero-box {
+    background: linear-gradient(135deg, rgba(108, 129, 64, 0.30), rgba(191, 7, 90, 0.14));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 1.5rem 1.8rem;
+    margin-bottom: 1.4rem;
+}
+
+.main-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #f8fafc;
+    margin-bottom: 0.2rem;
+}
+
+.subtitle {
+    font-size: 1.08rem;
+    color: #d1d5db;
+    margin-top: 0.2rem;
+}
+
+
+/* -----------------------------
+   TÍTULOS DE SEÇÃO
+----------------------------- */
+.section-title {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-top: 0.7rem;
+    margin-bottom: 0.9rem;
+}
+
+.detail-wrapper {
+    margin-top: 1.4rem;
+}
+
+
+/* -----------------------------
+   CARD DE RESULTADO DETALHADO
+----------------------------- */
+.result-card {
+    padding: 1.25rem;
+    border-radius: 18px;
+    margin-top: 0.8rem;
+    margin-bottom: 1.1rem;
+    border-left: 8px solid;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+}
+
+.result-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin-bottom: 0.45rem;
+}
+
+.result-text {
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+
+/* -----------------------------
+   MÉTRICAS
+----------------------------- */
+.metric-box {
+    background: rgba(10, 24, 52, 0.82);
+    padding: 1rem;
+    border-radius: 18px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.metric-label {
+    color: #cbd5e1;
+    font-size: 0.95rem;
+    margin-bottom: 0.35rem;
+}
+
+.metric-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #f8fafc;
+}
+
+
+/* -----------------------------
+   HISTÓRICO
+----------------------------- */
+.history-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 0.8rem;
+    margin-bottom: 0.7rem;
+}
+
+.small-muted {
+    color: #cbd5e1;
+    font-size: 0.9rem;
+}
+
+
+/* -----------------------------
+   CARDS DE COMPARAÇÃO
+----------------------------- */
+.comparison-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    padding: 0.9rem;
+    margin-top: 0.6rem;
+    min-height: 190px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.comparison-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin-bottom: 0.45rem;
+}
+
+.comparison-text {
+    font-size: 0.98rem;
+    line-height: 1.5;
+}
+
+.comparison-image-caption {
+    text-align: center;
+    color: #cbd5e1;
+    font-size: 0.9rem;
+    margin-top: 0.35rem;
+    margin-bottom: 0.2rem;
+    word-break: break-word;
+}
+
+
+/* -----------------------------
+   INDICADOR DE SELEÇÃO
+----------------------------- */
+.selected-chip {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.16);
+    border: 1px solid rgba(34, 197, 94, 0.45);
+    color: #bbf7d0;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
