@@ -1,42 +1,64 @@
-🍒 IA para Análise de Lichias
+# 🍒 IA para Análise de Lichias
 
-Sistema de Inteligência Artificial capaz de analisar imagens de lichias e classificar seu estado de maturação, integrado a uma API em FastAPI e persistência de dados no MongoDB Atlas.
+Sistema de **Inteligência Artificial** capaz de analisar imagens de lichias e classificar seu estado de maturação, integrado a uma **API em FastAPI** e persistência de dados no **MongoDB Atlas**.
 
-🚀 Funcionalidades
-📷 Upload de imagem via API
-🧠 Classificação com modelo de IA (TensorFlow/Keras)
-📊 Retorno da classe prevista + confiança
-☁️ Armazenamento dos resultados no MongoDB Atlas
-🔗 API REST para integração com web/mobile
-🧠 Tecnologias utilizadas
-Python 3.11
-FastAPI
-TensorFlow / Keras
-NumPy
-Pillow (PIL)
-MongoDB Atlas
-PyMongo
-Uvicorn
-📂 Estrutura do projeto
+---
+
+## 🚀 Funcionalidades
+
+- 📷 Upload de imagem via API  
+- 🧠 Classificação com modelo de IA (TensorFlow/Keras)  
+- 📊 Retorno da classe prevista + confiança  
+- ☁️ Armazenamento dos resultados no MongoDB Atlas  
+- 🔗 API REST para integração com web/mobile  
+
+---
+
+## 🧠 Tecnologias utilizadas
+
+- Python 3.11  
+- FastAPI  
+- TensorFlow / Keras  
+- NumPy  
+- Pillow (PIL)  
+- MongoDB Atlas  
+- PyMongo  
+- Uvicorn  
+
+---
+
+## 📂 Estrutura do projeto
+
+
 IA_Analise_de_Lichia/
 │
-├── api.py              # API principal (FastAPI)
-├── app.py              # Execução/integração
-├── requisitos.txt      # Dependências
-├── estilos.css         # Estilo frontend (se aplicável)
+├── api.py # API principal (FastAPI)
+├── app.py # Execução/integração
+├── requisitos.txt # Dependências
+├── estilos.css # Estilo frontend (se aplicável)
 ├── .gitignore
 │
 └── ia_lichia/
-    ├── train.py        # Treinamento do modelo
-    └── (outros arquivos do modelo)
-⚙️ Como executar o projeto
-1. Clonar o repositório
+├── train.py # Treinamento do modelo
+
+
+---
+
+## ⚙️ Como executar o projeto
+
+### 1. Clonar o repositório
+
+```bash
 git clone https://github.com/jk-ramos/IA_Analise_de_Lichia.git
 cd IA_Analise_de_Lichia
 2. Criar ambiente virtual
 python -m venv .venv
-source .venv/bin/activate   # Linux/Mac
-.venv\Scripts\activate      # Windows
+
+# Linux/Mac
+source .venv/bin/activate  
+
+# Windows
+.venv\Scripts\activate
 3. Instalar dependências
 pip install -r requisitos.txt
 4. Configurar MongoDB Atlas
@@ -59,7 +81,7 @@ curl -X POST "http://127.0.0.1:8000/predict" \
 -H "accept: application/json" \
 -H "Content-Type: multipart/form-data" \
 -F "file=@imagem.jpg"
-📥 Resposta:
+📥 Resposta
 {
   "classe_prevista": "madura",
   "confianca": 96.7,
@@ -68,7 +90,7 @@ curl -X POST "http://127.0.0.1:8000/predict" \
 }
 🗄️ Banco de Dados (MongoDB)
 
-Os dados são armazenados na coleção:
+Os dados são armazenados em:
 
 ia_lichia_db -> analises
 
@@ -84,21 +106,19 @@ Exemplo de documento:
 ❌ Não subir:
 logs/
 dataset/
-modelos .keras
+arquivos .keras
 ✔️ Usar .gitignore
 ✔️ Usar .env para credenciais
 📌 Status do projeto
-
 ✅ API funcionando
 ✅ Integração com MongoDB Atlas
 ✅ Modelo de IA treinado
-🔜 Integração com IoT e automação (futuro)
-
+🔜 Integração com IoT (futuro)
 👩‍💻 Autora
 
-Projeto desenvolvido por Jaquelaine Ramos
+Jaquelaine Ramos
 FATEC — Desenvolvimento de Software Multiplataforma
 
 📄 Licença
 
-Este projeto é acadêmico e de uso educacional.
+Projeto acadêmico de uso educacional.
