@@ -9,10 +9,12 @@ Sistema de **Inteligência Artificial** capaz de analisar imagens de lichias e c
 
 * 📷 Upload de imagem via API
 * 🧠 Classificação com modelo de IA (TensorFlow/Keras)
-* 📊 Retorno da classe prevista + confiança
+* 📊 Retorno da classe, confiança e ID da análise
 * ☁️ Armazenamento dos resultados no MongoDB Atlas
-* 🔗 API REST para integração com web/mobile
-
+* 📚 Listagem de análises com filtro, paginação e ordenação
+* 📈 Endpoint de estatísticas (total, médias, etc.)
+* 🔍 Consulta da última análise realizada
+* ❤️ Endpoint de saúde da API (`/health`)
 ---
 
 ## 🧠 Tecnologias utilizadas
@@ -35,7 +37,7 @@ IA_Analise_de_Lichia/
 │
 ├── api.py              # API principal (FastAPI)
 ├── app.py              # Execução/integração
-├── requisitos.txt      # Dependências
+├── requirements.txt    # Dependências
 ├── estilos.css         # Estilo frontend (se aplicável)
 ├── .gitignore
 │
@@ -44,6 +46,7 @@ IA_Analise_de_Lichia/
 ```
 
 ---
+
 
 ## ⚙️ Como executar o projeto
 
@@ -109,14 +112,40 @@ curl -X POST "http://127.0.0.1:8000/predict" \
 
 ```json
 {
+  "id": "6629f0...",
   "classe_prevista": "madura",
   "confianca": 96.7,
   "nome_arquivo": "imagem.jpg",
+  "data_analise": "2026-04-23T15:55:34",
   "mensagem": "Análise salva no MongoDB Atlas com sucesso"
 }
 ```
 
 ---
+
+## 📡 Endpoints da API
+
+### 🔍 POST `/predict`
+Realiza a análise da imagem enviada.
+
+### 📄 GET `/analises`
+Lista análises com suporte a:
+- filtro por classe (`madura`, `nao_madura`)
+- paginação (`limit`, `skip`)
+- ordenação (`data`, `confianca`)
+
+### 📈 GET `/estatisticas`
+Retorna:
+- total de análises
+- total de maduras
+- total de não maduras
+- média de confiança
+
+### 🕒 GET `/ultima-analise`
+Retorna a análise mais recente.
+
+### ❤️ GET `/health`
+Verifica status da API e conexão com MongoDB.
 
 ## 🗄️ Banco de Dados (MongoDB)
 
